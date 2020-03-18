@@ -492,3 +492,27 @@ def average_scans(scans_dict):
                                     columns=scan[1].columns,
                                     data=mean_TA)
     return mean_TA
+
+def find_summary_load_detail (DatasetName, whichFitName=None, GTArootDir=None):
+    # Glotaran analyses folder path
+    if GTArootDir == None:
+        userprofile = os.getenv('USERPROFILE')
+        GTArootDir = userprofile+'/Documents/FS-analyses/DPP_thin_films/'
+        
+    resultsDirs_spec = find_analyses (DatasetName, GTArootDir)
+    if whichFitName == None:
+        summary = None
+    for summary in resultsDirs_spec:
+        datasetFname = summary['datasetFname']
+        fitName = summary['fitName']
+        timpresFname = GTArootDir + summary['dirName'] + '/' + summary['fitName'] + '.timpres'
+        #repreWLS = get_float(repreWLSlist.\
+        #                 where(repreWLSlist["datasetFname"]==datasetFname).\
+        #                 dropna()['repreWLS'].iloc[0])    
+        #if True:
+        if fitName==whichFitName:            
+            detail = getFitResults(timpresFname)
+            summary['detail'] = detail
+            break
+    return summary
+

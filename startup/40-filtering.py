@@ -122,7 +122,8 @@ def correct_chirp(dataset,IRF=0,t0=0,dispersion=[],centralWL=0):
     for wl in dataset.index:
         #print(type(wl))
         times_offset = - chirpIndex.loc[wl,'t0'] + dataset.columns.values 
-        newCurves.loc[wl,:] = np.interp(newCurves.columns.values,times_offset,dataset.loc[wl,:])
+        ndTrace = dataset.loc[wl,:].astype(type(1.21654e-5), order='K', casting='unsafe')       
+        newCurves.loc[wl,:] = np.interp(newCurves.columns.values,times_offset,ndTrace)
     return newCurves
 
 def bg_chirp_correct (dataset,bg_rng=0,fitRes={}):
@@ -250,6 +251,28 @@ def nOrm (dataset,norm_type='min'):
             norm[column] /= abs(norm[column].max())
     return norm
     
+def unchirp_fitResult (summary, **kwargs):
+    """
+    Calculates the interpolated dataset that corrects for chirp parameters found by glotaran analysis
+    """
+    #if centralWL != None:
+    #    summary['centralWL']=centralWL
+    # load the detail TA characteristics from the saved result dataset:        
+    detail = summary['detail']
+    centralWL = float(detail['centralWL'])
+    if 'dataset' in kwargs:
+        traces = kwargs['dataset']
+        # correction for chirp
+        traces_chirp = correct_chirp(traces,
+                                     IRF=summary['IRF'][1],
+                                     t0=summary['IRF'][0],
+                                     dispersion=summary['Parmu'],
+                                     centralWL=centralWL)
+        summary['traces_chirp'] = traces_chirp
+    else:    
+        pass
+    return summary
+    
 def selectRepSpecTA (dataset, title=None, wl_range=[], wl_ex=[], time_idxs=[],times=[],trngs=[],**kwargs):
     '''
     Should  
@@ -369,11 +392,11 @@ def average_scans (test_TA,idxs=None) :
                 mean_TA += test_TA[scan].values
             count += 1
     else:
-        for scan in scans_dict.items():
+        for scan in test_TA.items():
             if type(mean_TA) == type(None):
-                mean_TA = scan[1].values
+                mean_TA = test_TA[scan].values
             else:
-                mean_TA += scan[1].values
+                mean_TA += test_TA[scan].values
             count += 1
     mean_TA /= count
     mean_TA = pd.DataFrame(index=test_TA[scan].index,
@@ -381,4 +404,6 @@ def average_scans (test_TA,idxs=None) :
                                     data=mean_TA)
     mean_TA = mean_TA.dropna(axis=0)
     return mean_TA
+
+
 
